@@ -70,7 +70,9 @@
         #obj{
             width:10px;
             height:30px;
-            background: red;
+            background: rgb(132,202,150);
+            background-image: url(img/man0.jpg);
+            background-size: 10px 30px;
             float:left;
             position:relative;
             left:0px;
@@ -127,19 +129,7 @@
             var oStand = document.getElementById('stand');//获取静止的div
             var aPlat = oStand.getElementsByTagName('div');//获取平台元素
             var oMove = document.getElementById('move');//获取stick和man这两个运动元素
-//            $('#btn1').click(function(){
-//                var timer = null;
-//                var zoom1 = parseInt( $('body').css('zoom') );
-//                timer = setInterval(function(){
-//                    zoom1 = zoom1 - 0.05;
-//                    $('body').css('zoom',zoom1);
-//                    if(zoom1<1){
-//                        clearInterval(timer);
-//                    }
-//                },10);
-//                $('body').css('background-size','cover');
-//                $('#btn1').hide();
-//            });
+
             $('#notice').mouseenter(function(){
                 startMove($('#notice').get(0),{
                     left:0
@@ -192,6 +182,7 @@
                 $('#move').empty();//每次开始前清空小人和棍子元素
                 $('#move').append( $('<div id="stick"></div>') );//插入棍子节点
                 $('#move').append( $('<div id="obj"></div>') );//插入小人节点
+//                $('#obj').css('backgroundImage','url("img/man0.jpg")')
                 var Stick1 = new Stick( num );//新建棍子对象
                 var Man1 = new Man( num );//新建小人对象
                 var targetLeft = getMargin(num+1);//达到过关条件的棍子长度最小值
@@ -255,8 +246,8 @@
         };         //棍子落下
         function Man( num ){
             this.obj = document.getElementById('obj');
-            this.timer1 = null;
-            this.dist = 0;
+            this.timer = null;
+            this.j = 0;
 
         }//小人对象构造函数
         Man.prototype.run = function( obj,left,right,num,fn,x ) {
@@ -264,9 +255,21 @@
             var hei = parseInt( getStyle(obj.oStick,'height') );//得到棍子的长度
             if( hei > left-1 && hei < right+3 ) { //过关，给了2px的误差优化下视觉效果
                 This.pass = true;
+
+                var i = 0;
+                This.timer = setInterval(function(){
+                    This.j = i%4;
+                    console.log(This.j);
+                    $('#obj').css('backgroundImage','url("img/man'+ This.j +'.jpg")')
+                    i++
+                },200);
+
+
                 startMove(this.obj,{//成功到达平台后，小人移动到平台右侧，等待过下一个悬崖
                     left:right
                 },function(){//过关后，num++，执行Go(num)函数
+                    $('#obj').css('backgroundImage','url("img/man0.jpg")')
+                    clearInterval(This.timer);
                     num++;
                     fn(num);
 
@@ -282,9 +285,19 @@
             }
             else{
                 This.pass = false;
+
+                var i = 0;
+                This.timer = setInterval(function(){
+                    This.j = i%4;
+                    console.log(This.j);
+                    $('#obj').css('backgroundImage','url("img/man'+ This.j +'.jpg")')
+                    i++
+                },200);
                 startMove(this.obj,{
                     left: hei
                 },function(){
+                    $('#obj').css('backgroundImage','url("img/man4.jpg")')
+                    clearInterval(This.timer);
                     startMove(this,{
                         top: 300,
                         opacity: 0
