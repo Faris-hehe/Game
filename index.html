@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        *{ margin:0;padding:0; }
+        li{
+            list-style:none;
+        }
+        html{
+            width: 100%;
+            height: 100%;
+            background-image: url('img/background.jpg');
+            background-repeat: no-repeat;
+            background-size:100% 100%;
+        }
+        body{
+            overflow: hidden;
+            /*zoom:4;*/
+        }        #notice{
+            position:absolute;
+            height:100px;
+            width:240px;
+            left: -250px;;
+            bottom: 50%;
+            z-index: 10;
+            background-image: url('img/replay.png');
+            background-repeat: no-repeat;
+            background-size:100% 100%;
+            border:5px solid darkgoldenrod;
+            border-radius:10px;
+            font-size: 26px;
+        }
+        #notice span{
+            display: block;
+            width:30px;
+            height:60px;
+            background: rgb(204,175,95);
+            position:relative;
+            left:240px;
+            top:-70px;
+            border:5px solid darkgoldenrod;
+        }
+        #notice li{
+            margin: 10px 10px;
+        }
+        #end{
+            width:150px;
+            height:50px;
+            background-image: url('img/play.png');
+            background-size: 100% 100% ;
+            border:5px solid rgb(183,123,0);
+            display: none;
+        }
+        #platform{
+            height: 300px;
+            position:absolute;
+            left:0px;
+            bottom:0px;
+            float:left;
+            overflow:hidden;
+        }
+        #start{
+            width:300px;
+            height:300px;
+            background-image: url("img/plat.png");
+            float:left}
+
+        #obj{
+            width:10px;
+            height:30px;
+            background: rgb(132,202,150);
+            background-image: url(img/man0.jpg);
+            background-size: 10px 30px;
+            float:left;
+            position:relative;
+            left:0px;
+            top:0px;
+        }
+        #stick{
+            width:6px;
+            height:10px;
+            background-color: #333333;
+            float:left;
+            position:absolute;
+            left:10px;
+            bottom: 0px;
+            -webkit-transform-origin:left bottom;
+        }
+        #move{
+            width:16px;
+            height:30px;
+            position:absolute;
+            left:0px;
+            bottom:300px;
+            z-index: 1;
+        }
+        .plat{
+            height: 300px;
+            background-image:url('img/plat3.png');
+            background-color: #5e9aa5;
+            float:left}
+        input{
+            width: 80px;
+            height:30px;
+            font-size: 20px;
+            position: relative;
+            left:10px;
+            top:10px;
+        }
+        #stand{
+            position:relative;
+            left:0px;
+            overflow:hidden;
+        }
+        #wrap{
+            position:absolute;
+            left:0px;
+            height:300px;
+            width:100%;
+            bottom: 0;
+        }
+    </style>
+    <script type="text/javascript" src="jquery-1.10.1.min.js" ></script>
+    <script src="Move.js"></script>
+    <script>
+        window.onload = function(){
+            var oStand = document.getElementById('stand');//获取静止的div
+            var aPlat = oStand.getElementsByTagName('div');//获取平台元素
+            var oMove = document.getElementById('move');//获取stick和man这两个运动元素
+
+            $('#notice').mouseenter(function(){
+                startMove($('#notice').get(0),{
+                    left:0
+                })
+            });
+            $('#notice').mouseleave(function(){
+                startMove($('#notice').get(0),{
+                    left:-250
+                })
+            });
+            $('#end').click(function(){
+                Go(0);
+                startMove( $('#wrap').get(0),{
+                    left: 0
+                });
+                $('#end').css('display','none')
+            });
+            /*开场*/
+
+            function newPlat (){
+                var intRandom = Math.floor(Math.random() * 200) + 60;//生成悬崖的间隔
+                var widRandom = Math.floor(Math.random() * 50) + 50;//生成悬崖的宽度
+                var platNew = document.createElement('div');
+                platNew.className = 'plat';
+                platNew.style.width = widRandom + 'px';
+                platNew.style.marginLeft = intRandom + 'px';
+                oStand.appendChild(platNew);
+            }/*  生成平台  */
+
+            var Man1 = new Man( );//创建小人对象
+            function getMargin(num){
+                return parseInt( css( aPlat[num],'margin-left') );
+            }//获取要到达平台的左边距
+            function getWitdh(num){
+                return parseInt( css( aPlat[num],'width') );
+            }//获取要到达平台的宽度
+            function StartLeft(x){
+                var start = 0;
+                for( var i=0;i<=x;i++ ){
+                    start = start + getMargin(i) + getWitdh(i)
+                }
+                return start;
+            }//计算每次出发前小人的left值
+
+            Go( 0 );//游戏从0个平台开始
+            function Go( num ){
+                for(var i=0;i<50;i++){
+                    newPlat();
+                }/*  生成所有平台  */
+                $('#move').empty();//每次开始前清空小人和棍子元素
+                $('#move').append( $('<div id="stick"></div>') );//插入棍子节点
+                $('#move').append( $('<div id="obj"></div>') );//插入小人节点
+//                $('#obj').css('backgroundImage','url("img/man0.jpg")')
+                var Stick1 = new Stick( num );//新建棍子对象
+                var Man1 = new Man( num );//新建小人对象
+                var targetLeft = getMargin(num+1);//达到过关条件的棍子长度最小值
+                var targetRight = getMargin(num+1)+getWitdh(num+1);//达到过关条件的棍子长度最大值
+                oMove.style.left = StartLeft(num)-10+'px';//出发前把移动元素（棍子、小人）放在出发的平台边
+                var timerRun = null;
+                document.onkeydown = function(ev){
+                    var ev = ev||event;
+                    if(ev.keyCode == 32 && !this.isSpaceKeydown){
+                        Stick1.grow();
+                        this.isSpaceKeydown = true
+                    }
+                };//按下空格键,棍子长高
+                document.onkeyup = function(ev){
+                    var ev = ev||event;
+                    if(ev.keyCode == 32){
+                        Stick1.down();
+                        this.isSpaceKeydown = false
+                    }
+                };//抬起空格键,棍子倒下
+                timerRun = setInterval(function(){
+                    if( $('#stick').css('transform').charAt(7) == 6 ){
+                        Man1.run(Stick1,targetLeft,targetRight,num,Go,StartLeft(num+1)-10 );
+                        clearInterval(timerRun);
+                    }//小人移动后，检测是否过关以及后续操作，所以传入了多个参数
+                },200);//这里实现棍子倒下后小人移动的链式运动遇到点问题，选择监控棍子偏转角达到90度后，小人开始移动
+            }
+        };
+
+        function Stick(  ){
+            this.oStick = document.getElementById('stick');
+            this.timer1 = null;
+            this.deg = 0;
+            this.onOff = true;
+            this.x = 0;
+        }//棍子对象构造函数
+        Stick.prototype.grow = function(){
+            var This = this;
+            if(This.onOff){
+                This.timer = setInterval(function(){
+                    This.oStick.style.height = This.oStick.offsetHeight + 5 +'px' ;
+                    if( parseInt( This.oStick.style.height)>=500  ){
+                        This.oStick.style.height = '500px';
+                        This.timer = null;
+                }
+                },8);
+            }
+        };         //棍子长高
+        Stick.prototype.down = function(){
+            var This = this;
+            This.onOff = false;
+            clearInterval(This.timer);
+            This.timer1 = setInterval(function () {
+                This.deg += 2;
+                if (This.deg >= 90) {
+                    This.deg = 90;
+                    clearInterval(This.timer1);
+                }
+                This.oStick.style.transform = 'rotate(' + This.deg + 'deg)';
+            }, 5)
+        };         //棍子落下
+        function Man( num ){
+            this.obj = document.getElementById('obj');
+            this.timer = null;
+            this.j = 0;
+
+        }//小人对象构造函数
+        Man.prototype.run = function( obj,left,right,num,fn,x ) {
+            var This = this;
+            var hei = parseInt( getStyle(obj.oStick,'height') );//得到棍子的长度
+            if( hei > left-1 && hei < right+3 ) { //过关，给了2px的误差优化下视觉效果
+                This.pass = true;
+
+                var i = 0;
+                This.timer = setInterval(function(){
+                    This.j = i%4;
+                    console.log(This.j);
+                    $('#obj').css('backgroundImage','url("img/man'+ This.j +'.jpg")')
+                    i++
+                },200);
+
+
+                startMove(this.obj,{//成功到达平台后，小人移动到平台右侧，等待过下一个悬崖
+                    left:right
+                },function(){//过关后，num++，执行Go(num)函数
+                    $('#obj').css('backgroundImage','url("img/man0.jpg")')
+                    clearInterval(This.timer);
+                    num++;
+                    fn(num);
+
+                    var stickOffsetLeft = Math.floor( parseInt( $('#stick').offset().left ) );
+                    var clientWidth = Math.floor( document.documentElement.clientWidth );
+                    if( stickOffsetLeft >= clientWidth*3/5 ){
+                        $('#wrap').css('width',clientWidth+x-300+'px' );
+                        startMove( $('#wrap').get(0),{
+                            left: -x+300
+                        });
+                    }//这里判断小人如果到达可视区右侧，平台随即向左移动，达到连续游戏的效果
+                });
+            }
+            else{
+                This.pass = false;
+
+                var i = 0;
+                This.timer = setInterval(function(){
+                    This.j = i%4;
+                    console.log(This.j);
+                    $('#obj').css('backgroundImage','url("img/man'+ This.j +'.jpg")')
+                    i++
+                },200);
+                startMove(this.obj,{
+                    left: hei
+                },function(){
+                    $('#obj').css('backgroundImage','url("img/man4.jpg")')
+                    clearInterval(This.timer);
+                    startMove(this,{
+                        top: 300,
+                        opacity: 0
+                    });
+                    setTimeout(function(){
+                        $('#end').css('display','block');
+                        $('#end').css('marginLeft',$(window).width()/2-parseInt( $('#end').css('width') )/2+'px') ;
+                        $('#end').css('marginTop',$(window).height()/2-parseInt( $('#end').css('height') )/2+'px') ;
+                    },500)
+                })
+            }//失败
+        };    //人物在棍子落下后往前移动
+
+        console.log( $('#state') )
+        function getStyle(obj,attr){
+            if(obj.currentStyle){
+                return obj.currentStyle[attr]
+            }else{
+                return getComputedStyle(obj,false)[attr]
+            }
+        }     //获取样式
+    </script>
+</head>
+<body>
+    <div id="end"></div>
+    <div id="notice" >
+        <ul>
+            <li>按下空格棍子长高</li>
+            <li>松开空格小人移动</li>
+            <!--<li><span></span></li>-->
+        </ul>
+        <span id="state">说明</span>
+    </div>
+    <div id="wrap">
+        <div id="move"></div>
+        <div id="platform" >
+            <div id="stand">
+                <div id="start"></div>
+            </div>
+        </div>
+    </div>
+</body>
+<!--<script>-->
+
+<!--</script>-->
+</html>
